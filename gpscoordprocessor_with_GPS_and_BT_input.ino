@@ -18,12 +18,22 @@ struct Coord{
   float lat;
   float lon;
 };
+struct Route{
+  float dist;
+  float head;
+};
 
+/*
+     GPS:   Serial3
+      BT:   Serial2
+Compass?:   Serial1 
+*/
 
-TinyGPS GPS;
+TinyGPS GPS;  
 Coord carLoc;
 Coord destLoc;
 Coord data;
+Route moveTo;
 float carBearing;
 char newInstr = '0';
 
@@ -138,8 +148,8 @@ Coord getDest(){
 char doCalcs(){
   Serial2.print("\nEnter GPS coordinates in the form xx.xxxxxx \n");
 
-  float lat1 = 40.24056;
-  float lon1 = -83.03100;
+  float lat1 = carLoc.lat;
+  float lon1 = carLoc.lon;
 
   float distance = 0.0;
   float angle = 0.0;
@@ -150,10 +160,21 @@ char doCalcs(){
   distance = makeDist(carLoc, destLoc);
   angle = makeAngle(carLoc, destLoc);
 
-  Serial2.println("\nThe car must move "+ (String)distance +" meters after adjusting its angle "+ (String)angle +" degrees from north.\n");
+  moveTo.dist = distance;
+  moveTo.head = angle;
+
+  Serial2.println("\nThe car must move "+ (String)distance +" meters after adjusting its angle to "+ (String)angle +" degrees from north.\n");
   return '0';
 }
 
+float turnAngle(){
+  float ang = moveTo.head - carBearing;
+  if(ang > 360.0){
+    ang -= 360.0;
+  }else if(ang < -360.0){
+    ang += 360.0;    
+  }
+}
 
 void stopWheel(){
   digitalWrite(wheel0, LOW); // Turn wheels off
@@ -169,14 +190,14 @@ void forwardWheel(){
   digitalWrite(wheel3, LOW);
 }
 
-void leftTurnWheel(){
+void rightTurnWheel(){
   digitalWrite(wheel0, LOW); // Turn left wheels back, right wheels forward
   digitalWrite(wheel1, HIGH);
   digitalWrite(wheel2, HIGH);
   digitalWrite(wheel3, LOW);
 }
 
-void rightTurnWheel(){
+void leftTurnWheel(){
   digitalWrite(wheel0, HIGH); // Turn left wheels forward, right wheeels back
   digitalWrite(wheel1, LOW);
   digitalWrite(wheel2, LOW);
